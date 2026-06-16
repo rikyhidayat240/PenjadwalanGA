@@ -26,5 +26,33 @@ Python versi 3.9 atau yang lebih baru
 PIP (Python Package Installer)
 
 ## 🚀 Langkah Instalasi dan Penggunaan
-Kloning Repositori
+1. Kloning Repositori
 Unduh repositori ini ke dalam mesin lokal Anda:
+```text
+git clone [https://github.com/username/nama-repositori.git](https://github.com/username/nama-repositori.git)
+cd nama-repositori
+```
+
+2. Instalasi Pustaka Pendukung
+Pasang semua dependensi yang diperlukan dengan menjalankan perintah berikut di terminal:
+```text
+pip install -r requirements.txt
+```
+
+3. Menjalankan Aplikasi
+Eksekusi server lokal Streamlit untuk membuka antarmuka web:
+```text
+streamlit run penjadwalan_ga.py
+```
+Setelah perintah dijalankan, aplikasi akan otomatis terbuka di peramban (browser) Anda, biasanya pada alamat http://localhost:8501.
+
+## 📊 Format Dokumen Masukan (Excel)
+Untuk memastikan data dapat dibaca dengan benar oleh data_parser.py, berkas Excel (.xlsx) masukan wajib memiliki struktur 4 lembar kerja (sheets) dengan urutan berikut:
+Sheet 1: Parameter Global
+- Memuat informasi parameter operasional seperti waktu mulai, waktu selesai, dan durasi satuan SKS dalam menit.
+Sheet 2: Data Ruangan
+- Memuat daftar seluruh kode ruangan yang tersedia untuk digunakan sebagai tempat perkuliahan.
+Sheet 3: Data Dosen
+- Memuat nama lengkap dosen beserta daftar hari libur atau hari halangan mengajar mereka (dipisahkan dengan koma jika lebih dari satu hari).
+Sheet 4: Data Mata Kuliah
+- Memuat susunan kolom: Kurikulum, Kode Matakuliah, Nama Matakuliah (termasuk penanda kelas seperti (A) atau (MBKM)), Semester, SKS, dan Nama Dosen Pengampu. Mendukung format baris terpisah atau sel ter-merge untuk dosen anggota/tim.
