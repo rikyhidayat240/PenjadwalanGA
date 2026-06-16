@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Lingkungan Virtual (Virtual Environment)
+venv/
+.venv/
+env/
+ENV/
+
+# Berkas konfigurasi lokal Streamlit
+.streamlit/
+
+# File data Excel (agar file privat/uji coba lokal tidak masuk ke GitHub)
+data_jadwal.xlsx
+data_jadwal_dummy.xlsx
+temp_data_jadwal.xlsx
+jadwal_terbaik.xlsx
+Jadwal_Optimal.xlsx
+*.xlsx
+
+# File sistem operasi
+.DS_Store
+Thumbs.db
