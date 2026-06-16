@@ -48,11 +48,15 @@ Setelah perintah dijalankan, aplikasi akan otomatis terbuka di peramban (browser
 
 ## 📊 Format Dokumen Masukan (Excel)
 Untuk memastikan data dapat dibaca dengan benar oleh data_parser.py, berkas Excel (.xlsx) masukan wajib memiliki struktur 4 lembar kerja (sheets) dengan urutan berikut:
+
 Sheet 1: Parameter Global
 - Memuat informasi parameter operasional seperti waktu mulai, waktu selesai, dan durasi satuan SKS dalam menit.
+
 Sheet 2: Data Ruangan
 - Memuat daftar seluruh kode ruangan yang tersedia untuk digunakan sebagai tempat perkuliahan.
+
 Sheet 3: Data Dosen
 - Memuat nama lengkap dosen beserta daftar hari libur atau hari halangan mengajar mereka (dipisahkan dengan koma jika lebih dari satu hari).
+
 Sheet 4: Data Mata Kuliah
 - Memuat susunan kolom: Kurikulum, Kode Matakuliah, Nama Matakuliah (termasuk penanda kelas seperti (A) atau (MBKM)), Semester, SKS, dan Nama Dosen Pengampu. Mendukung format baris terpisah atau sel ter-merge untuk dosen anggota/tim.
