@@ -255,10 +255,17 @@ if __name__ == "__main__":
                 
             data['beban_mengajar'] = [item for item in data['beban_mengajar'] if item['semester'] in selected_semesters]
             
+            # Hitung total dosen yang terlibat berdasarkan kelas yang difilter
+            dosen_terlibat = set()
+            for item in data['beban_mengajar']:
+                for d in item['dosen_list']:
+                    dosen_terlibat.add(d)
+            jumlah_dosen_aktif = len(dosen_terlibat)
+            
             st.write("---")
             col1, col2, col3, col4 = st.columns(4)
             col1.metric("Durasi SKS", f"{data['info_sistem']['durasi_sks']} Menit")
-            col2.metric("Total Dosen", f"{len(data['dosen'])} Orang")
+            col2.metric("Total Dosen (Difilter)", f"{jumlah_dosen_aktif} Orang")
             col3.metric("Total Ruang", f"{len(data['ruangan'])} Ruangan")
             col4.metric("Beban Kelas (Difilter)", f"{len(data['beban_mengajar'])} Kelas")
             
