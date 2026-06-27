@@ -36,7 +36,7 @@ def buat_slot_waktu(jam_mulai_str, jam_selesai_str, durasi_menit):
 def muat_data_excel(filepath='data_jadwal.xlsx'):
     """
     Membaca file Excel dan merapikannya ke format siap proses.
-    Otomatis memfilter kelas MBKM dan mendukung merged cells tim dosen.
+    Otomatis memfilter kelas MBKM, KKN, PKL, dan Tugas Akhir (termasuk kepanjangannya).
     """
     try:
         xls = pd.read_excel(filepath, sheet_name=None)
@@ -48,7 +48,6 @@ def muat_data_excel(filepath='data_jadwal.xlsx'):
         print(f"Error membaca Excel: {e}")
         return None
 
-    # 1. PARAMETER GLOBAL
     df_param = xls[nama_sheets[0]]
     param_dict = dict(zip(df_param.iloc[:, 0], df_param.iloc[:, 1]))
     
@@ -58,11 +57,9 @@ def muat_data_excel(filepath='data_jadwal.xlsx'):
     
     slot_waktu = buat_slot_waktu(jam_mulai, jam_selesai, durasi_sks)
 
-    # 2. DATA RUANGAN
     df_ruang = xls[nama_sheets[1]]
     ruangan = df_ruang.iloc[:, 0].dropna().tolist() 
 
-    # 3. DATA DOSEN
     df_dosen = xls[nama_sheets[2]]
     dosen_libur = {}
     
@@ -77,22 +74,27 @@ def muat_data_excel(filepath='data_jadwal.xlsx'):
             
         dosen_libur[nama] = libur_list
 
-    # 4. DATA MATA KULIAH (Penyesuaian Index Kolom Baru)
     df_matkul = xls[nama_sheets[3]]
     beban_mengajar = []
     
     skip_current_class = False 
     
+    kata_kunci_abaikan = [
+        "MBKM", 
+        "KKN", "KULIAH KERJA NYATA", 
+        "PKL", "PRAKTEK KERJA", "PRAKTIK KERJA", 
+        "TUGAS AKHIR", "SKRIPSI"
+    ]
+    
     for _, row in df_matkul.iterrows():
-        # Kolom 0 sekarang adalah "Kurikulum", Kolom 1 adalah "Kode Matkul"
         kode_raw = row.iloc[1] 
         
-        # Skenario 1: Ini adalah baris Matkul baru
         if pd.notna(kode_raw) and str(kode_raw).strip() != "":
             kode_matkul = str(kode_raw).strip()
-            nama_matkul_raw = str(row.iloc[2]).strip() # Kolom 2 = Nama
+            nama_matkul_raw = str(row.iloc[2]).strip()
+            nama_upper = nama_matkul_raw.upper()
             
-            if "MBKM" in nama_matkul_raw.upper():
+            if any(keyword in nama_upper for keyword in kata_kunci_abaikan):
                 skip_current_class = True
                 continue
             
@@ -105,14 +107,12 @@ def muat_data_excel(filepath='data_jadwal.xlsx'):
                 matkul = nama_matkul_raw
                 kelas = "-" 
                 
-            # Pastikan isinya angka dengan aman (Kolom 3 = Semester, Kolom 4 = SKS)
             semester_val = str(row.iloc[3]).strip()
             sks_val = str(row.iloc[4]).strip()
             
             semester = int(float(semester_val)) if semester_val.replace('.', '', 1).isdigit() else 0
             sks = int(float(sks_val)) if sks_val.replace('.', '', 1).isdigit() else 0
             
-            # Kolom 5 = Nama Dosen
             dosen_raw = str(row.iloc[5]).strip()
             dosen = dosen_raw.split(":")[-1].strip() if ":" in dosen_raw else dosen_raw
             
@@ -126,12 +126,10 @@ def muat_data_excel(filepath='data_jadwal.xlsx'):
                 'dosen': dosen if dosen and dosen != "nan" else ""
             })
             
-        # Skenario 2: Ini adalah baris anggota dosen (Sel Excel di-merge)
         else:
             if skip_current_class:
                 continue
                 
-            # Kolom 5 = Nama Dosen Anggota
             dosen_raw = str(row.iloc[5]).strip()
             
             if pd.notna(row.iloc[5]) and dosen_raw != "" and dosen_raw != "nan":
@@ -156,4 +154,4 @@ if __name__ == "__main__":
     data = muat_data_excel('data_jadwal.xlsx')
     if data:
         print("Data berhasil dimuat!")
-        print(f"Total beban kelas yang akan dijadwalkan (Non-MBKM): {len(data['beban_mengajar'])}")
+        print(f"Total beban kelas yang akan dijadwalkan (Non-MBKM/KKN/PKL/TA): {len(data['beban_mengajar'])}")

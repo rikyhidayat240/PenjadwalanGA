@@ -134,7 +134,6 @@ class AlgoritmaGenetika:
                 i1 = self.seleksi_turnamen(populasi, fitnesses)
                 i2 = self.seleksi_turnamen(populasi, fitnesses)
                 
-                # Menggunakan probabilitas Crossover
                 if random.random() < self.crossover_rate:
                     anak = self.crossover(i1, i2)
                 else:
@@ -152,9 +151,9 @@ class AlgoritmaGenetika:
         return populasi
 
     def simpan_ke_excel(self, kromosom, nama_file="jadwal_terbaik.xlsx"):
-        data_tabel = []
+        data_tabel_raw = []
         for gen in kromosom:
-            data_tabel.append({
+            data_tabel_raw.append({
                 'Hari': gen['hari'],
                 'Waktu': f"{gen['jam_mulai']} - {gen['jam_selesai']}",
                 'Kode MK': gen['kode'],
@@ -166,13 +165,46 @@ class AlgoritmaGenetika:
                 'Ruangan': gen['ruang']
             })
             
-        df = pd.DataFrame(data_tabel)
+        df_raw = pd.DataFrame(data_tabel_raw)
         hari_map = {'Senin': 1, 'Selasa': 2, 'Rabu': 3, 'Kamis': 4, 'Jumat': 5, 'Sabtu': 6, 'Minggu': 7}
-        df['Urutan_Hari'] = df['Hari'].map(hari_map)
-        df = df.sort_values(by=['Urutan_Hari', 'Waktu']).drop('Urutan_Hari', axis=1).reset_index(drop=True)
+        df_raw['Urutan_Hari'] = df_raw['Hari'].map(hari_map)
+        df_raw = df_raw.sort_values(by=['Urutan_Hari', 'Waktu']).drop('Urutan_Hari', axis=1).reset_index(drop=True)
         
-        df.to_excel(nama_file, index=False)
-        return df
+        ruangan_list = self.data['ruangan']
+        hari_list = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']
+        
+        baris_waktu = []
+        grid_data = []
+        
+        for hari in hari_list:
+            if hari not in self.slot_per_hari: continue
+                
+            baris_waktu.append(f"====== {hari.upper()} ======")
+            grid_data.append([""] * len(ruangan_list))
+            
+            for slot in self.slot_per_hari[hari]:
+                waktu_str = f"{slot['jam_mulai']} sd {slot['jam_selesai']}"
+                baris_waktu.append(waktu_str)
+                
+                row_data = []
+                for ruang in ruangan_list:
+                    teks_sel = ""
+                    for gen in kromosom:
+                        if gen['hari'] == hari and gen['ruang'] == ruang:
+                            if slot['id_slot'] in gen['id_slot']:
+                                teks_sel = f"{gen['matkul']} ({gen['kelas']}) - {gen['dosen']}"
+                                break
+                    row_data.append(teks_sel)
+                grid_data.append(row_data)
+                
+        df_grid = pd.DataFrame(grid_data, columns=ruangan_list, index=baris_waktu)
+        df_grid.index.name = 'WAKTU'
+        
+        with pd.ExcelWriter(nama_file, engine='openpyxl') as writer:
+            df_grid.to_excel(writer, sheet_name='Jadwal_Matriks')
+            df_raw.to_excel(writer, sheet_name='Jadwal_Datar', index=False)
+            
+        return df_grid, df_raw
 
 
 if __name__ == "__main__":
@@ -205,17 +237,35 @@ if __name__ == "__main__":
         if data:
             st.write("Data berhasil dimuat. Siap diproses.")
             
+            st.write("---")
+            st.subheader("Filter Semester")
+            semua_semester = sorted(list(set([item['semester'] for item in data['beban_mengajar']])))
+            
+            selected_semesters = []
+            if semua_semester:
+                cols = st.columns(min(len(semua_semester), 8))
+                for i, sem in enumerate(semua_semester):
+                    with cols[i % 8]:
+                        if st.checkbox(f"Semester {sem}", value=True):
+                            selected_semesters.append(sem)
+            
+            if not selected_semesters:
+                st.warning("Silakan centang minimal 1 semester untuk dilanjutkan.")
+                st.stop()
+                
+            data['beban_mengajar'] = [item for item in data['beban_mengajar'] if item['semester'] in selected_semesters]
+            
+            st.write("---")
             col1, col2, col3, col4 = st.columns(4)
             col1.metric("Durasi SKS", f"{data['info_sistem']['durasi_sks']} Menit")
             col2.metric("Total Dosen", f"{len(data['dosen'])} Orang")
             col3.metric("Total Ruang", f"{len(data['ruangan'])} Ruangan")
-            col4.metric("Beban Kelas", f"{len(data['beban_mengajar'])} Kelas")
+            col4.metric("Beban Kelas (Difilter)", f"{len(data['beban_mengajar'])} Kelas")
             
             st.write("---")
             
             st.subheader("Konfigurasi Algoritma")
             
-            # Membagi input ke dalam dua baris agar lebih rapi
             col_set1, col_set2, col_set3 = st.columns(3)
             with col_set1:
                 maksimal_percobaan = st.number_input("Batas Auto-Restart", min_value=1, max_value=50, value=3)
@@ -226,10 +276,8 @@ if __name__ == "__main__":
 
             col_set4, col_set5, col_btn = st.columns(3)
             with col_set4:
-                # Input Crossover (0.0 s.d 1.0)
                 input_crossover = st.number_input("Crossover Rate", min_value=0.0, max_value=1.0, value=0.7, step=0.1)
             with col_set5:
-                # Input Mutasi ditampilkan dalam persentase agar lebih mudah dipahami (4 = 4%)
                 input_mutasi = st.number_input("Mutation Rate (%)", min_value=0.0, max_value=100.0, value=4.0, step=1.0) / 100.0
             
             with col_btn:
@@ -282,13 +330,15 @@ if __name__ == "__main__":
                 else:
                     st.write(f"Jadwal paling optimal (Fitness {fitness_terbaik_global:.4f}), tersisa {total_konflik_terbaik_global} bentrok.")
                 
-                df_hasil = ga.simpan_ke_excel(jadwal_terbaik_global, "jadwal_terbaik.xlsx")
-                st.dataframe(df_hasil, use_container_width=True, height=600, hide_index=True)
+                df_grid, df_raw = ga.simpan_ke_excel(jadwal_terbaik_global, "jadwal_terbaik.xlsx")
+                
+                st.write("### Pratinjau Jadwal (Format Matriks)")
+                st.dataframe(df_grid, use_container_width=True, height=600)
                 
                 with open("jadwal_terbaik.xlsx", "rb") as file:
                     st.download_button(
-                        label="Unduh File Excel",
+                        label="Unduh File Excel (Matriks & Data Lengkap)",
                         data=file,
-                        file_name="Jadwal_Optimal.xlsx",
+                        file_name="Jadwal_Optimal_Matriks.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
