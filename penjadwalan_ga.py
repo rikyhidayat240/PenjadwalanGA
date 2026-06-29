@@ -37,6 +37,7 @@ class AlgoritmaGenetika:
             slot_terpilih = slot_hari_ini[start_idx : start_idx + sks]
             id_slot_terpilih = [s['id_slot'] for s in slot_terpilih]
             
+            
             gen = {
                 'kode': tugas.get('kode', '-'),
                 'matkul': tugas['matkul'],
@@ -63,7 +64,7 @@ class AlgoritmaGenetika:
         
         for gen in kromosom:
             dosen_list = gen['dosen_list']
-            kelas = gen['kelas']
+            id_kelas_unik = f"{gen['semester']}_{gen['kelas']}"
             ruang = gen['ruang']
             hari = gen['hari']
             
@@ -80,10 +81,10 @@ class AlgoritmaGenetika:
                     if d in slot_data['dosen']: CD += 1
                     slot_data['dosen'].append(d)
                 
-                if kelas in slot_data['kelas']: CK += 1
+                if id_kelas_unik in slot_data['kelas']: CK += 1
                 if ruang in slot_data['ruang']: CR += 1
                 
-                slot_data['kelas'].append(kelas)
+                slot_data['kelas'].append(id_kelas_unik)
                 slot_data['ruang'].append(ruang)
                 
         total_konflik = CD + CK + CR + CH
@@ -96,8 +97,10 @@ class AlgoritmaGenetika:
 
     def crossover(self, induk1, induk2):
         titik_potong = random.randint(0, len(induk1)-1)
+        # Gabungkan potongan list
         anak = induk1[:titik_potong] + induk2[titik_potong:]
-        return anak
+        # WAJIB DEEPCOPY: Membuat objek dictionary baru murni agar tidak merusak data induk saat dimutasi
+        return copy.deepcopy(anak)
 
     def mutasi(self, kromosom, peluang):
         if random.random() < peluang:
