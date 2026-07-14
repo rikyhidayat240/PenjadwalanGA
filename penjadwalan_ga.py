@@ -81,7 +81,10 @@ class AlgoritmaGenetika:
                     if d in slot_data['dosen']: CD += 1
                     slot_data['dosen'].append(d)
                 
-                if id_kelas_unik in slot_data['kelas']: CK += 1
+                # Jika kelas adalah kelas pilihan (pil), abaikan bentrok antar sesama kelas pilihan
+                if id_kelas_unik in slot_data['kelas'] and "pil" not in id_kelas_unik.lower(): 
+                    CK += 1
+                
                 if ruang in slot_data['ruang']: CR += 1
                 
                 slot_data['kelas'].append(id_kelas_unik)
@@ -128,9 +131,18 @@ class AlgoritmaGenetika:
     def evolusi(self, populasi, generasi=100, progress_bar=None, status_text=None):
         for gen in range(generasi):
             fitnesses = [self.hitung_fitness(k)[0] for k in populasi]
+            
+            # EARLY STOPPING
+            fitness_tertinggi = max(fitnesses)
+            if fitness_tertinggi == 1.0:
+                if progress_bar: progress_bar.progress(1.0)
+                if status_text: status_text.write(f"🎉 BINGO! Jadwal sempurna (Fitness 1.0) ditemukan pada generasi ke-{gen}. Menghentikan pencarian...")
+                return populasi
+            
             populasi_baru = []
             
-            terbaik_idx = fitnesses.index(max(fitnesses))
+            # Gunakan fitness_tertinggi yang sudah dicari di atas
+            terbaik_idx = fitnesses.index(fitness_tertinggi)
             populasi_baru.append(copy.deepcopy(populasi[terbaik_idx]))
             
             while len(populasi_baru) < self.ukuran_populasi:
@@ -148,7 +160,7 @@ class AlgoritmaGenetika:
             
             if progress_bar and status_text and gen % 10 == 0:
                 progress_bar.progress(gen / generasi)
-                status_text.write(f"🧬 Sedang Evolusi... Generasi: {gen}/{generasi} | Fitness Terbaik Sementara: {max(fitnesses):.4f}")
+                status_text.write(f"🧬 Sedang Evolusi... Generasi: {gen}/{generasi} | Fitness Terbaik Sementara: {fitness_tertinggi:.4f}")
                 
         if progress_bar: progress_bar.progress(1.0)
         return populasi
